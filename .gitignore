@@ -1,0 +1,7 @@
+.Rproj.user
+.Rbuildignore
+.Rhistory
+.Ruserdata
+.DS_Store
+__MACOSX
+packrat/lib*/
