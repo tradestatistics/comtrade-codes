@@ -1,5 +1,8 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
+OEC COMTRADE Codes
+==================
+
 Description
 -----------
 
@@ -18,7 +21,7 @@ Each project is organized as an RStudio project. Each project contains a master 
 
 The master script, for any case, runs a function with user prompt and/or simple scripts. The safe way to run this without errors is to open the project and then run the master script from RStudio.
 
-[OEC Packages Snapshot](https://github.com/observatory-economic-complexity/oec-packages-snapshot) contains a bundle to avoid dependencies or packages related problems, but this project already contains an unbundled set of packages to ease reproducibility.
+[OEC Packages Snapshot](https://github.com/observatory-economic-complexity/oec-packages-snapshot) stores all packages and its dependencies used across all repositories under this organization. To ease reproducibility [OEC Bundles](https://github.com/observatory-economic-complexity/oec-bundles) contains several bundles to avoid dependencies or packages related problems, and this project already contains an unbundled set of packages.
 
 You can read more about RStudio projects [here](https://support.rstudio.com/hc/en-us/articles/200526207-Using-Projects).
 
