@@ -15,11 +15,13 @@ tidy_country_dir <- "01-2-tidy-country-data"
 try(dir.create(tidy_country_dir))
 
 country_codes <- read_excel(paste0(raw_country_dir, "/country-codes.xls")) %>% 
-  clean_names()
+  clean_names() %>% 
+  filter(iso3_digit_alpha != "NULL")
 
 continents <- countrycode::codelist %>% 
   as_tibble() %>% 
-  select(iso3c, continent, eu28)
+  select(iso3c, continent, eu28) %>% 
+  filter(!is.na(iso3c))
 
 continents2 <- continents %>% 
   select(continent) %>% 
@@ -27,14 +29,81 @@ continents2 <- continents %>%
   distinct() %>% 
   mutate(continent_id = row_number())
 
-continents <- continents %>% 
+continents3 <- continents %>% 
+  select(iso3c, continent) %>% 
+  filter(
+    !is.na(iso3c),
+    !is.na(continent)
+  ) %>%
   left_join(continents2) %>% 
+  left_join(continents %>% select(iso3c, eu28)) %>% 
   rename(eu28_member = eu28) %>% 
-  mutate(eu28_member = ifelse(is.na(eu28_member), 0, 1)) %>% 
+  mutate(
+    iso3c = ifelse(iso3c == "ROU", "ROM", iso3c),
+    eu28_member = ifelse(iso3c == "ROM", 1, eu28_member)
+  ) %>% 
   select(iso3c, continent_id, continent, eu28_member)
 
 country_codes <- country_codes %>% 
-  left_join(continents, by = c("iso3_digit_alpha" = "iso3c"))
+  left_join(continents3 %>% select(iso3c, continent_id), by = c("iso3_digit_alpha" = "iso3c")) %>% 
+  filter(
+    !country_code %in% 
+      c(
+        0,
+        10,
+        58,
+        97,
+        230,
+        280,
+        356,
+        532,
+        588,
+        590,
+        658,
+        711,
+        841,
+        868,
+        886
+      )
+  ) %>% 
+  mutate(
+    continent_id = ifelse(iso3_digit_alpha == "DDR", 2, continent_id),
+    continent_id = ifelse(iso3_digit_alpha %in% 
+                            c("IOT","VDR","YMD","TMP"), 1, continent_id),
+    continent_id = ifelse(iso3_digit_alpha %in% 
+                            c("CSK","DDR","SUN","YUG","ROM","SCG"), 2, continent_id),
+    continent_id = ifelse(iso3_digit_alpha %in% 
+                            c("ATF"), 3, continent_id),
+    continent_id = ifelse(iso3_digit_alpha %in% 
+                            c("PCI","HMD"), 4, continent_id),
+    continent_id = ifelse(iso3_digit_alpha %in% 
+                            c("ARB","PCZ","CCK","SGS","UMI","BVT","ANT"), 5, continent_id)
+  ) %>% 
+  left_join(continents2 %>% select(continent_id, continent), by = "continent_id") %>% 
+  left_join(continents3 %>% select(iso3c, eu28_member), by = c("iso3_digit_alpha" = "iso3c")) %>% 
+  mutate(eu28_member = ifelse(is.na(eu28_member), 0, 1))
+
+country_codes_2 <- country_codes %>% 
+  filter(country_code %in% c(56,251,276,699,528,659,586,591,842,887,710)) %>% 
+  mutate(
+    country_fullname_english = c(
+      "Belgium (Belgium-Luxembourg Customs Union until 1999)",
+      "France (includes Monaco)",
+      "Germany (former Federal Republic of Germany until 1990)",
+      "India (excludes Sikkim until 1975)",
+      "Netherlands Antilles (includes Aruba until 1988)",
+      "Pakistan (former East and West Pakistan until 1962)",
+      "Panama (excludes Panama Canal Zone until 1978)",
+      "Saint Kitts and Nevis (includes Anguilla until 1981)",
+      "South Africa (Southern African Customs Union until 2000)",
+      "USA, Puerto Rico and US Virgin Islands (excludes Virgin Islands until 1981)",
+      "Yemen (former Arab Republic of Yemen until 1991)"
+    )
+  )
+
+country_codes <- country_codes %>% 
+  anti_join(country_codes_2, by = "country_code") %>% 
+  bind_rows(country_codes_2)
 
 save(country_codes, file = paste0(tidy_country_dir, "/country-codes.RData"), compress = "xz")
 
