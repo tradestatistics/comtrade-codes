@@ -8,7 +8,7 @@
 #1: Tidy country codes
 
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(dplyr, readxl, janitor)
+pacman::p_load(dplyr, readxl, janitor, countrycode)
 
 raw_country_dir <- "01-1-raw-country-data"
 tidy_country_dir <- "01-2-tidy-country-data"
@@ -16,6 +16,25 @@ try(dir.create(tidy_country_dir))
 
 country_codes <- read_excel(paste0(raw_country_dir, "/country-codes.xls")) %>% 
   clean_names()
+
+continents <- countrycode::codelist %>% 
+  as_tibble() %>% 
+  select(iso3c, continent, eu28)
+
+continents2 <- continents %>% 
+  select(continent) %>% 
+  filter(!is.na(continent)) %>% 
+  distinct() %>% 
+  mutate(continent_id = row_number())
+
+continents <- continents %>% 
+  left_join(continents2) %>% 
+  rename(eu28_member = eu28) %>% 
+  mutate(eu28_member = ifelse(is.na(eu28_member), 0, 1)) %>% 
+  select(iso3c, continent_id, continent, eu28_member)
+
+country_codes <- country_codes %>% 
+  left_join(continents, by = c("iso3_digit_alpha" = "iso3c"))
 
 save(country_codes, file = paste0(tidy_country_dir, "/country-codes.RData"), compress = "xz")
 
